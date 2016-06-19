@@ -1,0 +1,15 @@
+{
+  "name": "search-places",
+  "version": "1.0.0",
+  "description": "this get the places from google places and get a csv file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Gibran Arias",
+  "license": "ISC",
+  "dependencies": {
+    "csv-write-stream": "^2.0.0",
+    "superagent": "^2.0.0"
+  }
+}
