@@ -9,6 +9,7 @@
   "author": "Gibran Arias",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.0.0-rc.6",
     "csv-write-stream": "^2.0.0",
     "superagent": "^2.0.0"
   }
