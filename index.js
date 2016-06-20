@@ -11,6 +11,8 @@ const search = 'doctor';
 const header = ["hello", "foo"];
 const body = [['world', 'bar']];
 
+let placeName;
+
 const getPlaces = (search, location, callback) => {
   request
    .get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=5000&types=all&name=${search}&key=AIzaSyBUTi_Mn7gKH2cAyQ3lv4LZxDYsD7Vj8KE`)
@@ -23,53 +25,41 @@ const getPlaces = (search, location, callback) => {
    });
 }
 
-const getPlaceDetail = (place, callback) => {
-  request
-   .get(`https://maps.googleapis.com/maps/api/place/details/json?placeid=${place.place_id}&key=AIzaSyBUTi_Mn7gKH2cAyQ3lv4LZxDYsD7Vj8KE`)
-   .end((err, res) => handlePlaceDetailResponse(err, res, callback));
+const createRows = (places, callback) => {
+  async.mapSeries(places, (place, next) => getPlaceDetail(place, place.name, next), callback);
 };
 
-const handlePlaceDetailResponse = (error, res, callback) => {
-  if (error) || res.status == 'INVALID_REQUEST') {
+const getPlaceDetail = (place, placeName, callback) => {
+  request
+   .get(`https://maps.googleapis.com/maps/api/place/details/json?placeid=${place.place_id}&key=AIzaSyBUTi_Mn7gKH2cAyQ3lv4LZxDYsD7Vj8KE`)
+   .end((err, res) => handlePlaceDetailResponse(err, res, placeName, callback));
+};
+
+const handlePlaceDetailResponse = (error, res, placeName, callback) => {
+  if (error) {
     console.log(error);
   }
   const response = JSON.parse(res.text);
-  callback(null, parseDetail(response.results));
-}
-
-const createRows = (placesInArray, callback) => {
-  async.mapSeries(placesInArray, (item, next) => getPlaceDetail(item, next), callback);
+  callback(null, parseDetail(response.result, placeName));
 };
 
-const parseDetail = (item) => {
-  return [item.formatted_address, item.international_phone_number, item.url, item.website];
+const parseDetail = (item, placeName) => {
+  return [placeName, item.formatted_address, item.international_phone_number, item.url, item.website];
 };
 
-const placesToArray = (places, callback) => {
-  let placesInArray = [];
-  for(var place in places){
-    placesInArray.push(places[place])
-  }
-  callback(null, placesInArray)
-}
-
-const csvCreator = (headers, rows) => {
+const csvCreator = (headers, rows, callback) => {
   const writer = csvWriter({ headers: headers});
   writer.pipe(fs.createWriteStream('places.csv'));
   rows.map((row) => {
     writer.write(row);
   });
+  callback();
 };
-
-const algo = (data, callback) => {
-  console.log(data)
-}
 
 async.waterfall([
   (next) => getPlaces(search, location, next),
-  placesToArray,
   createRows,
-  algo
+  (rows, next) => csvCreator(header, rows, next)
 ], function (error, result) {
     console.log(error)
 });
