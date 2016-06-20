@@ -26,29 +26,24 @@ const getPlaces = (search, location, callback) => {
 const getPlaceDetail = (place, callback) => {
   request
    .get(`https://maps.googleapis.com/maps/api/place/details/json?placeid=${place.place_id}&key=AIzaSyBUTi_Mn7gKH2cAyQ3lv4LZxDYsD7Vj8KE`)
-   .end(function(error, res){
-    if (error || res.status == 'INVALID_REQUEST') {
-      console.log(error);
-    }
-    const response = JSON.parse(res.text);
-    callback(null, response);
-   });
+   .end((err, res) => handlePlaceDetailResponse(err, res, callback));
+};
+
+const handlePlaceDetailResponse = (error, res, callback) => {
+  if (error) || res.status == 'INVALID_REQUEST') {
+    console.log(error);
+  }
+  const response = JSON.parse(res.text);
+  callback(null, parseDetail(response.results));
 }
 
 const createRows = (placesInArray, callback) => {
-  var rows = [];
-  async.eachSeries(placesInArray, (item, callback) => {
-    async.waterfall([
-      async.apply(getPlaceDetail, item),
-      algo
-    ]);
-  });
-  callback(null, rows)
-}
+  async.mapSeries(placesInArray, (item, next) => getPlaceDetail(item, next), callback);
+};
 
-const addRowItem = (item, rows, callback) => {
-  rows.push([item.formatted_address, item.international_phone_number, item.url, item.website])
-}
+const parseDetail = (item) => {
+  return [item.formatted_address, item.international_phone_number, item.url, item.website];
+};
 
 const placesToArray = (places, callback) => {
   let placesInArray = [];
@@ -71,7 +66,7 @@ const algo = (data, callback) => {
 }
 
 async.waterfall([
-  async.apply(getPlaces, search, location),
+  (next) => getPlaces(search, location, next),
   placesToArray,
   createRows,
   algo
