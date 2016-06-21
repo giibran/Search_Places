@@ -4,18 +4,20 @@ const fs = require("fs");
 const request = require('superagent');
 const csvWriter = require('csv-write-stream');
 const async = require('async');
+const config = require('./config');
 
-const location = '20.686006,-103.368966';
-const search = 'doctor';
+const args = process.argv.slice(2);
+const location = args[1] || '20.686006,-103.368966';
+const search = args[0] || 'doctor';
+const RADIUS = '1000';
+const TYPES = 'all';
+const KEY = config.google_key;
 
-const header = ["hello", "foo"];
-const body = [['world', 'bar']];
-
-let placeName;
+const header = ["name", "address", 'celphone', 'google_url', 'website'];
 
 const getPlaces = (search, location, callback) => {
   request
-   .get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=5000&types=all&name=${search}&key=AIzaSyBUTi_Mn7gKH2cAyQ3lv4LZxDYsD7Vj8KE`)
+   .get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=${RADIUS}&types=${TYPES}&name=${search}&key=${KEY}`)
    .end(function(error, res){
     if (error) {
       console.log(error);
@@ -61,5 +63,7 @@ async.waterfall([
   createRows,
   (rows, next) => csvCreator(header, rows, next)
 ], function (error, result) {
+  if (error) {
     console.log(error)
+  }
 });
